@@ -1,14 +1,14 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import viewsets
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework import generics, viewsets
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .models import User
-from .serializers import UserSerializer
+from .serializers import RegisterUserSerializer, UserSerializer
 
 
 class UserApiViewSet(viewsets.ModelViewSet):
@@ -43,6 +43,27 @@ class UserView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+
+class RegisterUserView(generics.CreateAPIView):
+    """Registro público de nuevos clientes (no requiere token)."""
+
+    serializer_class = RegisterUserSerializer
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        tags=['Autenticación'],
+        security=[],
+        operation_summary='Registrar un usuario nuevo',
+        operation_description=(
+            'Endpoint público para crear una cuenta de cliente. '
+            'Enviar email, first_name, last_name, phone y password. '
+            'La contraseña se guarda hasheada y no se devuelve.'
+        ),
+        responses={201: RegisterUserSerializer()},
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 
 class EmailTokenObtainPairView(TokenObtainPairView):

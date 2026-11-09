@@ -10,6 +10,11 @@ urlpatterns = [
     path('', include(router.urls)),
     path('auth/me/', views.UserView.as_view(), name='auth-me'),
     path(
+        'auth/register/',
+        views.RegisterUserView.as_view(),
+        name='auth-register',
+    ),
+    path(
         'auth/token/',
         views.EmailTokenObtainPairView.as_view(),
         name='token_obtain_pair',

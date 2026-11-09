@@ -139,3 +139,62 @@ class UserAPITestCase(APITestCase):
         self._auth(self.user_token)
         response = self.client.get('/api/v1/users/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class RegisterAPITestCase(APITestCase):
+    """Pruebas del endpoint público de registro (usado por React)."""
+
+    def setUp(self):
+        self.url = reverse('auth-register')
+        self.payload = {
+            'email': 'nuevo@test.com',
+            'first_name': 'Nuevo',
+            'last_name': 'Cliente',
+            'phone': '5551234567',
+            'password': 'NuevoPassword123!',
+        }
+
+    def test_registro_exitoso_devuelve_201_y_no_expone_password(self):
+        response = self.client.post(self.url, self.payload, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertNotIn('password', response.data)
+        self.assertEqual(response.data['email'], 'nuevo@test.com')
+
+        creado = User.objects.get(email='nuevo@test.com')
+        self.assertTrue(creado.check_password('NuevoPassword123!'))
+        self.assertFalse(creado.is_staff)
+        self.assertTrue(creado.is_active)
+
+    def test_registro_no_requiere_token(self):
+        # Sin credenciales, el endpoint debe seguir siendo accesible.
+        response = self.client.post(self.url, self.payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_email_duplicado_devuelve_400(self):
+        User.objects.create_user(
+            email='nuevo@test.com',
+            password='OtraPassword123!',
+        )
+
+        response = self.client.post(self.url, self.payload, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('email', response.data)
+
+    def test_password_corta_devuelve_400(self):
+        payload = {**self.payload, 'password': '123'}
+
+        response = self.client.post(self.url, payload, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('password', response.data)
+
+    def test_faltan_campos_obligatorios_devuelve_400(self):
+        response = self.client.post(
+            self.url, {'email': 'incompleto@test.com'}, format='json'
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        for campo in ('first_name', 'last_name', 'phone', 'password'):
+            self.assertIn(campo, response.data)

@@ -44,11 +44,13 @@ THIRD_APPS = [
     'rest_framework_simplejwt',
     'drf_yasg',
     'django_filters',
+    'corsheaders',
 ]
 
 OWN_APPS = [
     'users',
     'products',
+    'integrations',
 ]
 
 INSTALLED_APPS = BASE_APPS + THIRD_APPS + OWN_APPS
@@ -57,6 +59,7 @@ INSTALLED_APPS = BASE_APPS + THIRD_APPS + OWN_APPS
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -146,6 +149,7 @@ STATIC_URL = 'static/'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
     # Por seguridad, todos los endpoints requieren autenticación salvo que
     # la vista indique lo contrario (por ejemplo, el login con JWT).
@@ -199,3 +203,13 @@ SWAGGER_SETTINGS = {
     'SHOW_REQUEST_HEADERS': True,
     'PERSIST_AUTH': True,
 }
+
+
+# =============================================================================
+# CORS (frontend React con Vite)
+# =============================================================================
+# En desarrollo el frontend se ejecuta en http://localhost:5173.
+# Para la práctica se permite cualquier origen; en producción se debe
+# restringir con CORS_ALLOWED_ORIGINS.
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True

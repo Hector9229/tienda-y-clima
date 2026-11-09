@@ -64,3 +64,51 @@ class UserSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+
+
+class RegisterUserSerializer(serializers.ModelSerializer):
+    """Registro público de clientes.
+
+    Solo expone los datos necesarios para crear la cuenta. La contraseña es
+    write-only y se guarda con ``set_password`` (hash de Django).
+    """
+
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        min_length=8,
+        style={'input_type': 'password'},
+        help_text='Contraseña de al menos 8 caracteres.',
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'email',
+            'first_name',
+            'last_name',
+            'phone',
+            'password',
+        )
+        read_only_fields = ('id',)
+        extra_kwargs = {
+            'first_name': {'required': True},
+            'last_name': {'required': True},
+            'phone': {'required': True},
+        }
+
+    def validate_email(self, value):
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError(
+                'Ya existe un usuario con este correo electrónico.'
+            )
+        return value.lower()
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        return User.objects.create_user(password=password, **validated_data)
